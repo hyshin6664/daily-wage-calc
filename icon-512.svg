@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#2563eb"/>
+  <rect x="100" y="90" width="312" height="332" rx="36" fill="#ffffff"/>
+  <rect x="132" y="122" width="248" height="74" rx="14" fill="#0f172a"/>
+  <text x="368" y="180" text-anchor="end" font-family="Arial,sans-serif" font-size="56" font-weight="700" fill="#34d399">₩</text>
+  <g fill="#e2e8f0">
+    <rect x="132" y="222" width="54" height="48" rx="10"/>
+    <rect x="200" y="222" width="54" height="48" rx="10"/>
+    <rect x="268" y="222" width="54" height="48" rx="10"/>
+    <rect x="336" y="222" width="44" height="118" rx="10" fill="#2563eb"/>
+    <rect x="132" y="284" width="54" height="48" rx="10"/>
+    <rect x="200" y="284" width="54" height="48" rx="10"/>
+    <rect x="268" y="284" width="54" height="48" rx="10"/>
+    <rect x="132" y="346" width="54" height="48" rx="10"/>
+    <rect x="200" y="346" width="54" height="48" rx="10"/>
+    <rect x="268" y="346" width="54" height="48" rx="10"/>
+    <rect x="336" y="354" width="44" height="40" rx="10" fill="#34d399"/>
+  </g>
+</svg>

@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <title>일용직 급여계산기</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="./icon-192.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-192.svg">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -22,6 +26,9 @@
   header button:hover, header label.btn:hover{background:#f1f5f9}
   header button.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
   header button.pri:hover{background:#1d4ed8}
+  header button.install{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+  header button.install:hover{background:#d1fae5}
+  header button#installBtn{display:none}
   header input[type=file]{display:none}
 
   .wrap{max-width:1180px;margin:18px auto;padding:0 16px}
@@ -83,8 +90,9 @@
 
 <header>
   <h1>일용직 급여계산기</h1>
-  <span class="ver" id="verBtn" title="업데이트 내역">v1.0.0</span>
+  <span class="ver" id="verBtn" title="업데이트 내역">v1.1.0</span>
   <div class="spacer"></div>
+  <button id="installBtn" class="install" title="바탕화면 바로가기 만들기">📌 바탕화면에 설치</button>
   <button id="addBtn" class="pri">+ 인원 추가</button>
   <button id="expBtn">엑셀 다운로드</button>
   <label class="btn" for="fileInput">엑셀 불러오기</label>
@@ -168,9 +176,10 @@
 
 <script>
 /* ─────────────────────── 상태 ─────────────────────── */
-const VER = "v1.0.0";
+const VER = "v1.1.0";
 const UPDATE_HISTORY = [
-  ["v1.0.0","2026-05-07","최초 배포"]
+  ["v1.1.0","2026-05-07","PWA 설치 지원(바탕화면 바로가기), 오프라인 캐시"],
+  ["v1.0.0","2026-05-07","최초 배포 — 주휴수당/세금(3.3%) 자동 계산, 엑셀 입출력, A4 인쇄"]
 ];
 
 let rows = []; // {name, rate, start, end}
@@ -430,6 +439,34 @@ function init(){
   render();
 }
 init();
+
+/* ─────────────────────── PWA: 설치 + SW ─────────────────────── */
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  $("installBtn").style.display = "inline-block";
+});
+$("installBtn").addEventListener("click", async ()=>{
+  if(!deferredPrompt){
+    alert("이미 설치되어 있거나, 브라우저가 설치를 지원하지 않아요.\n\n크롬/엣지: 주소창 오른쪽 ⊕ 아이콘 → 설치\n사파리(아이폰): 공유 → 홈 화면에 추가");
+    return;
+  }
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  if(choice.outcome === "accepted") $("installBtn").style.display = "none";
+  deferredPrompt = null;
+});
+window.addEventListener("appinstalled", ()=>{ $("installBtn").style.display = "none"; });
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+    navigator.serviceWorker.addEventListener("message", e=>{
+      if(e.data && e.data.type === "SW_FORCE_RELOAD") location.reload();
+    });
+  });
+}
 </script>
 </body>
 </html>
