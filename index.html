@@ -51,6 +51,11 @@
   table.main td.rate input{text-align:right;font-variant-numeric:tabular-nums}
   table.main td.rate input.auto{background:#f1f5f9;color:#475569}
   table.main td.rate .auto-tag{display:block;font-size:10px;color:#94a3b8;margin-top:2px}
+  table.main td.whh input{
+    font-family:inherit;font-size:13px;padding:5px 6px;border:1px solid #e2e8f0;border-radius:5px;width:60px;text-align:right;font-variant-numeric:tabular-nums
+  }
+  table.main td.whh input.auto{background:#f1f5f9;color:#475569}
+  table.main td.whh .auto-tag{display:block;font-size:10px;color:#94a3b8;margin-top:2px}
   table.main td.del button{
     background:#fee2e2;color:#b91c1c;border:none;border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:14px;line-height:1
   }
@@ -92,7 +97,7 @@
 
 <header>
   <h1>일용직 급여계산기</h1>
-  <span class="ver" id="verBtn" title="업데이트 내역">v1.2.2</span>
+  <span class="ver" id="verBtn" title="업데이트 내역">v1.3.0</span>
   <div class="spacer"></div>
   <button id="installBtn" class="install" title="바탕화면 바로가기 만들기">📌 바탕화면에 설치</button>
   <button id="addBtn" class="pri">+ 인원 추가</button>
@@ -137,7 +142,7 @@
         <th style="width:130px">종료일</th>
         <th>근무일수</th>
         <th>실근로시간</th>
-        <th>주휴시간</th>
+        <th style="width:90px">주휴시간<br><span style="font-weight:400;color:#94a3b8;font-size:10px">수정 가능</span></th>
         <th>합계시간</th>
         <th>세전급여</th>
         <th>소득세<br><span style="font-weight:400;color:#94a3b8;font-size:10px">3%</span></th>
@@ -171,7 +176,8 @@
     · <b>월급</b>을 입력하면 시급은 ÷209(고용노동부 표준 월 소정근로시간)로 자동 계산됩니다. 예: 2,200,000 → 10,526원.<br>
     · 월급을 비우면 시급을 직접 입력할 수 있어요.<br>
     · 입사일 = 첫 출근일, 종료일은 비워두면 그 달 말일로 자동 계산됩니다.<br>
-    · 엑셀 다운로드 후 다시 불러오면 같은 인원이 그대로 복원됩니다.
+    · 엑셀 다운로드 후 다시 불러오면 같은 인원이 그대로 복원됩니다.<br>
+    · <b>주휴시간</b>은 자동(소정근무일 100% 출근 시 8h/주) 표시됩니다. 연속근무로 마지막 주에도 줘야 하는 등 직접 수정해야 할 때는 칸을 클릭해 입력하세요. 비우면 자동값으로 돌아갑니다.
   </div>
 
 </div>
@@ -180,8 +186,9 @@
 
 <script>
 /* ─────────────────────── 상태 ─────────────────────── */
-const VER = "v1.2.2";
+const VER = "v1.3.0";
 const UPDATE_HISTORY = [
+  ["v1.3.0","2026-05-07","주휴시간 수동 수정 가능 (연속근무 등 자동값과 다를 때 직접 입력)"],
   ["v1.2.2","2026-05-07","월급/시급 입력 중 포커스 빠지는 문제 수정 (커서 위치 보존)"],
   ["v1.2.1","2026-05-07","시급 항상 편집 가능(자동 채워주되 잠그지 않음), SW 캐시 v2 강제 갱신"],
   ["v1.2.0","2026-05-07","월급 입력 시 시급 자동 환산(÷209), 엑셀에 월급 컬럼 추가"],
@@ -217,7 +224,7 @@ function calcRow(r){
   const e = periodEnd   > monEnd   ? monEnd   : periodEnd;
 
   let workDays = 0;
-  let weekHolidayHours = 0;
+  let autoWeekHoliday = 0;
 
   if(s <= e){
     // 주(월=1~일=7) 키 단위로 그룹: 그 주의 "월요일 날짜"를 키로
@@ -249,12 +256,16 @@ function calcRow(r){
         if(dd>=s && dd<=e) weekDpwInPeriod++;
       }
       if(weekDpwInPeriod===dpw && v.worked===dpw){
-        weekHolidayHours += 8;
+        autoWeekHoliday += 8;
       }
     }
   }
 
   const workHours = workDays * hpd;
+  // 사용자 override: r.whh 가 빈 문자열이 아니면 그 값 사용
+  const overrideWhh = (r.whh !== "" && r.whh !== undefined && r.whh !== null) ? Number(r.whh) : null;
+  const weekHolidayHours = (overrideWhh !== null && !isNaN(overrideWhh)) ? overrideWhh : autoWeekHoliday;
+  const isWhhAuto = !(overrideWhh !== null && !isNaN(overrideWhh));
   const totalHours = workHours + weekHolidayHours;
   // 시급 우선: r.rate 가 비어있고 월급만 있으면 자동 환산
   const monthly = Number(r.monthly)||0;
@@ -266,7 +277,7 @@ function calcRow(r){
   const deduct = incomeTax + localTax;
   const net = gross - deduct;
 
-  return {workDays, workHours, weekHolidayHours, totalHours, rate, gross, incomeTax, localTax, deduct, net};
+  return {workDays, workHours, weekHolidayHours, autoWeekHoliday, isWhhAuto, totalHours, rate, gross, incomeTax, localTax, deduct, net};
 }
 
 /* ─────────────────────── 렌더 ─────────────────────── */
@@ -306,7 +317,10 @@ function render(){
       <td class="date"><input type="date" data-k="end" data-i="${i}" value="${r.end||""}"></td>
       <td class="num">${c.workDays}</td>
       <td class="num">${c.workHours}</td>
-      <td class="num">${c.weekHolidayHours}</td>
+      <td class="whh">
+        <input data-k="whh" data-i="${i}" value="${c.isWhhAuto ? c.autoWeekHoliday : r.whh}" inputmode="decimal" ${c.isWhhAuto?'class="auto"':''}>
+        ${c.isWhhAuto?'<span class="auto-tag">자동</span>':'<span class="auto-tag" style="color:#dc2626">수정됨</span>'}
+      </td>
       <td class="num">${c.totalHours}</td>
       <td class="num">${fmt(c.gross)}</td>
       <td class="num">${fmt(c.incomeTax)}</td>
@@ -329,9 +343,9 @@ function render(){
     inp.addEventListener("input", e=>{
       const i = +e.target.dataset.i, k = e.target.dataset.k;
       let v = e.target.value;
-      if(k==="rate" || k==="monthly") v = v.replace(/[^\d.]/g,"");
+      if(k==="rate" || k==="monthly" || k==="whh") v = v.replace(/[^\d.]/g,"");
       rows[i][k] = v;
-      if(k==="rate" || k==="monthly" || k==="start" || k==="end") render();
+      if(k==="rate" || k==="monthly" || k==="whh" || k==="start" || k==="end") render();
     });
   });
   tbody.querySelectorAll("button[data-del]").forEach(b=>{
@@ -355,7 +369,7 @@ function render(){
 /* ─────────────────────── 행동 ─────────────────────── */
 function addRow(){
   const ym = $("ym").value;
-  rows.push({name:"", monthly:"", rate:"", start:`${ym}-01`, end:""});
+  rows.push({name:"", monthly:"", rate:"", start:`${ym}-01`, end:"", whh:""});
   render();
   // 마지막 행 이름에 포커스
   setTimeout(()=>{
@@ -441,13 +455,22 @@ function importXlsx(file){
         // "합계" 행 스킵 (어느 칸에 있든)
         if(row.some(c => String(c)==="합계")) continue;
         if(!row[iName] && !row[iRate] && !(iMonthly>=0 && row[iMonthly])) continue;
-        newRows.push({
+        const iWhh = idx("주휴시간");
+        const r = {
           name: String(row[iName]||""),
           monthly: iMonthly>=0 ? String(Number(row[iMonthly])||"") : "",
           rate: String(Number(row[iRate])||""),
           start: toDateStr(row[iStart]),
-          end: toDateStr(row[iEnd])
-        });
+          end: toDateStr(row[iEnd]),
+          whh: ""
+        };
+        // 자동 주휴 계산 후, 엑셀 값과 다르면 override 로 저장
+        if(iWhh>=0 && row[iWhh]!=="" && row[iWhh]!=null){
+          const xlsWhh = Number(row[iWhh]);
+          const auto = calcRow(r).autoWeekHoliday;
+          if(!isNaN(xlsWhh) && xlsWhh !== auto) r.whh = String(xlsWhh);
+        }
+        newRows.push(r);
       }
       rows = newRows;
       render();
