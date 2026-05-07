@@ -131,6 +131,20 @@
   .modal .summary b{font-variant-numeric:tabular-nums}
   .modal .mf{padding:12px 18px;border-top:1px solid var(--line);text-align:right}
   .modal .mf button{font-family:inherit;font-size:14px;background:var(--pri);color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer}
+  /* 업데이트 내역 모달 */
+  .modal.history{max-width:640px}
+  .history .timeline{position:relative;padding-left:18px}
+  .history .timeline::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:linear-gradient(to bottom,#2563eb,#bfdbfe)}
+  .history .item{position:relative;padding:0 0 16px 0}
+  .history .item::before{content:"";position:absolute;left:-18px;top:6px;width:12px;height:12px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-shadow:0 0 0 2px #2563eb}
+  .history .item.latest::before{background:#34d399;box-shadow:0 0 0 2px #34d399;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 2px #34d399}50%{box-shadow:0 0 0 5px rgba(52,211,153,.3)}100%{box-shadow:0 0 0 2px #34d399}}
+  .history .item .head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .history .item .ver-tag{display:inline-block;background:#eff6ff;color:#1e40af;font-weight:700;padding:2px 8px;border-radius:6px;font-size:12px;font-variant-numeric:tabular-nums}
+  .history .item.latest .ver-tag{background:#d1fae5;color:#065f46}
+  .history .item .new-badge{display:inline-block;background:#dc2626;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+  .history .item .date{font-size:11px;color:var(--sub);margin-left:auto}
+  .history .item .desc{font-size:13px;color:var(--ink);line-height:1.5;padding-left:2px}
 
   /* ─────────── 인쇄(A4 가로) ─────────── */
   @media print{
@@ -158,7 +172,7 @@
 
 <header>
   <h1>일용직 급여계산기</h1>
-  <span class="ver" id="verBtn" title="업데이트 내역">v3.1.6</span>
+  <span class="ver" id="verBtn" title="업데이트 내역">v3.1.7</span>
   <div class="spacer"></div>
   <button id="installBtn" class="install" title="바탕화면 바로가기 만들기">📌 바탕화면에 설치</button>
   <button id="addBtn" class="pri">+ 인원 추가</button>
@@ -247,6 +261,21 @@
 
 </div>
 
+<!-- 업데이트 내역 모달 -->
+<div class="modal-bg hide" id="histBg">
+  <div class="modal history">
+    <div class="mh">
+      <h3>📜 업데이트 내역</h3>
+      <span class="name" id="histCurVer"></span>
+      <button id="histClose">×</button>
+    </div>
+    <div class="mb">
+      <div class="timeline" id="histList"></div>
+    </div>
+    <div class="mf"><button id="histDone">닫기</button></div>
+  </div>
+</div>
+
 <!-- 근무일 선택 모달 -->
 <div class="modal-bg hide" id="modalBg">
   <div class="modal">
@@ -304,8 +333,9 @@
 <footer class="credit">CDN &amp; Cloud is by Solbox..</footer>
 
 <script>
-const VER = "v3.1.6";
+const VER = "v3.1.7";
 const UPDATE_HISTORY = [
+  ["v3.1.7","2026-05-07","업데이트 내역 alert → 타임라인 모달로 교체 (NEW 배지·맥동 효과·날짜·버전 태그)"],
   ["v3.1.6","2026-05-07","메타에 '주휴 자동 계산 ON/OFF' 토글. OFF면 주휴 칸 빈칸으로 시작 → 매번 직접 입력. 설정 브라우저에 저장"],
   ["v3.1.5","2026-05-07","주휴수당 비례 계산 (주시간÷40×8h, 최대 8h). 예: 주 4일×8h=32h → 주휴 6.4h"],
   ["v3.1.4","2026-05-07","개인별 1일 근무시간 칸 추가 (비우면 메타 기본값, 입력하면 그 값으로 계산)"],
@@ -413,6 +443,26 @@ function daysPreview(daysArr){
 }
 
 function whhAutoChecked(){ return !!($("whhAuto") && $("whhAuto").checked); }
+
+/* ─────────── 업데이트 내역 모달 ─────────── */
+function openHistory(){
+  $("histCurVer").textContent = `현재 ${VER}`;
+  const html = UPDATE_HISTORY.map((h,i)=>{
+    const [v, date, desc] = h;
+    const isLatest = i===0;
+    return `<div class="item ${isLatest?'latest':''}">
+      <div class="head">
+        <span class="ver-tag">${v}</span>
+        ${isLatest?'<span class="new-badge">NEW</span>':''}
+        <span class="date">${date}</span>
+      </div>
+      <div class="desc">${desc}</div>
+    </div>`;
+  }).join("");
+  $("histList").innerHTML = html;
+  $("histBg").classList.remove("hide");
+}
+function closeHistory(){ $("histBg").classList.add("hide"); }
 
 /* ─────────── 표 렌더 ─────────── */
 function render(){
@@ -908,9 +958,10 @@ function init(){
     if(e.target.files[0]) importXlsx(e.target.files[0]);
     e.target.value = "";
   });
-  $("verBtn").addEventListener("click", ()=>{
-    alert("업데이트 내역\n\n" + UPDATE_HISTORY.map(h=>`${h[0]} (${h[1]}) - ${h[2]}`).join("\n"));
-  });
+  $("verBtn").addEventListener("click", openHistory);
+  $("histClose").addEventListener("click", closeHistory);
+  $("histDone").addEventListener("click", closeHistory);
+  $("histBg").addEventListener("click", e=>{ if(e.target.id==="histBg") closeHistory(); });
 
   // 모달
   $("mClose").addEventListener("click", closeModal);
