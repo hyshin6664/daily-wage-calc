@@ -1,6 +1,6 @@
 // 급여계산기 SW — index.html 은 항상 네트워크 우선(새 버전 즉시 반영), 그 외만 cache-first
-const CACHE = 'wage-calc-v3';
-const ASSETS = ['./manifest.json', './icon-192.svg', './icon-512.svg', './calendar.html'];
+const CACHE = 'wage-calc-v4';
+const ASSETS = ['./manifest.json', './icon-192.svg', './icon-512.svg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(()=>{}));
