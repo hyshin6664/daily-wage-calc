@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#2563eb">
 <link rel="icon" href="./icon-192.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-192.svg">
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
   :root{
     --line:#e5e7eb; --ink:#111827; --sub:#6b7280; --pri:#2563eb; --bg:#f8fafc;
@@ -88,6 +88,23 @@
   .modal .mh button{background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--sub);width:30px;height:30px;border-radius:6px}
   .modal .mh button:hover{background:#f1f5f9;color:var(--ink)}
   .modal .mb{padding:14px 18px}
+  .modal .tabs{display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+  .modal .tabs button{font-family:inherit;font-size:13px;background:transparent;border:none;padding:8px 14px;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:600}
+  .modal .tabs button.on{color:var(--pri);border-bottom-color:var(--pri)}
+  .modal .tabs button:hover:not(.on){background:#f8fafc}
+  .modal .pane{display:none}
+  .modal .pane.on{display:block}
+  .modal .period{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
+  .modal .period .row{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  .modal .period .row label{font-size:12px;color:var(--sub);min-width:50px}
+  .modal .period .row input[type=date]{font-family:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:5px}
+  .modal .period .dows{display:flex;gap:4px;flex-wrap:wrap}
+  .modal .period .dow{display:flex;align-items:center;gap:4px;background:#fff;padding:5px 9px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:12px;user-select:none}
+  .modal .period .dow input{margin:0;width:14px;height:14px;cursor:pointer}
+  .modal .period .dow.on{background:#dbeafe;border-color:#bfdbfe;color:#1e40af;font-weight:600}
+  .modal .period .applyBtn{font-family:inherit;font-size:13px;background:var(--pri);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-weight:600}
+  .modal .period .applyBtn:hover{background:#1d4ed8}
+  .modal .period .modeChk{display:flex;gap:4px;font-size:12px;color:var(--sub);align-items:center;margin-left:auto}
   .modal .quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
   .modal .quick button{font-family:inherit;font-size:12px;padding:6px 10px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer}
   .modal .quick button:hover{background:#f1f5f9}
@@ -141,7 +158,7 @@
 
 <header>
   <h1>일용직 급여계산기</h1>
-  <span class="ver" id="verBtn" title="업데이트 내역">v3.0.0</span>
+  <span class="ver" id="verBtn" title="업데이트 내역">v3.1.0</span>
   <div class="spacer"></div>
   <button id="installBtn" class="install" title="바탕화면 바로가기 만들기">📌 바탕화면에 설치</button>
   <button id="addBtn" class="pri">+ 인원 추가</button>
@@ -231,12 +248,45 @@
       <button id="mClose">×</button>
     </div>
     <div class="mb">
-      <div class="quick">
-        <button data-q="weekdays">평일 전체</button>
-        <button data-q="all">이번달 전체</button>
-        <button data-q="clear" class="danger">초기화</button>
+      <div class="tabs">
+        <button data-tab="day" class="on">📅 일별 선택</button>
+        <button data-tab="period">📆 기간으로 선택</button>
       </div>
-      <div class="cal" id="mCal"></div>
+
+      <div class="pane on" data-pane="day">
+        <div class="quick">
+          <button data-q="weekdays">평일 전체</button>
+          <button data-q="all">이번달 전체</button>
+          <button data-q="clear" class="danger">초기화</button>
+        </div>
+        <div class="cal" id="mCal"></div>
+      </div>
+
+      <div class="pane" data-pane="period">
+        <div class="period">
+          <div class="row">
+            <label>시작일</label>
+            <input type="date" id="pStart">
+            <label>종료일</label>
+            <input type="date" id="pEnd">
+          </div>
+          <div class="row">
+            <label>요일</label>
+            <div class="dows" id="pDows"></div>
+          </div>
+          <div class="row">
+            <label class="modeChk"><input type="radio" name="pMode" value="replace" checked> 기존 선택을 덮어쓰기</label>
+            <label class="modeChk"><input type="radio" name="pMode" value="add"> 추가</label>
+            <button class="applyBtn" id="pApply">기간 적용 →</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--sub);line-height:1.6">
+          · 시작·종료일 사이에서 선택한 요일만 골라 한 번에 채워줍니다.<br>
+          · 예: 시작 5/12 ~ 종료 5/31, 월~금 → 그 기간의 평일만 자동으로 ✓ 표시.<br>
+          · 적용 후 일별 탭에서 추가/제거 가능합니다.
+        </div>
+      </div>
+
       <div class="summary"><span>선택된 근무일</span><b><span id="mCount">0</span> 일</b></div>
     </div>
     <div class="mf"><button id="mDone">완료</button></div>
@@ -246,8 +296,9 @@
 <footer class="credit">CDN &amp; Cloud is by Solbox..</footer>
 
 <script>
-const VER = "v3.0.0";
+const VER = "v3.1.0";
 const UPDATE_HISTORY = [
+  ["v3.1.0","2026-05-07","모달에 [기간 선택] 탭 추가(시작~종료+요일), 엑셀 색·테두리·천단위·수식 내장(시급/주휴 바꾸면 세전·세금·차인 자동 재계산)"],
   ["v3.0.0","2026-05-07","입사일/종료일 → 달력 클릭 통합. 표 한 줄로 깔끔하게. 주 15h+ 자동 주휴, 최저시급(10,320) 기본"],
   ["v2.0.0","2026-05-07","📅 달력 모드 추가 (별도 페이지)"],
   ["v1.3.0","2026-05-07","주휴시간 수동 수정 가능"],
@@ -313,10 +364,26 @@ function calcRow(r){
 }
 
 /* ─────────── 근무일 미리보기 ─────────── */
+const DOW_KO = ["일","월","화","수","목","금","토"];
 function daysPreview(daysArr){
   if(daysArr.length===0) return "";
-  if(daysArr.length<=4) return daysArr.map(d=>d.slice(8)).join(",");
-  return daysArr.slice(0,3).map(d=>d.slice(8)).join(",") + ` 외 ${daysArr.length-3}일`;
+  // 연속 기간 자동 감지
+  const dnums = daysArr.map(d => Number(d.slice(8))).sort((a,b)=>a-b);
+  const isContiguous = dnums.every((n,i)=> i===0 || n===dnums[i-1]+1);
+  if(isContiguous && dnums.length>=3) return `${dnums[0]}일 ~ ${dnums[dnums.length-1]}일 (${dnums.length}일)`;
+  // 평일/특정요일 패턴 감지
+  const dowSet = new Set(daysArr.map(d=>{
+    const [y,m,dd] = d.split("-").map(Number);
+    return new Date(y,m-1,dd).getDay();
+  }));
+  if(dnums.length>=4){
+    const dows = [...dowSet].sort();
+    const allWeekday = dows.every(x=>x>=1 && x<=5);
+    if(allWeekday && dows.length===5) return `평일 (${dnums.length}일)`;
+    if(allWeekday && dows.length<=3) return `${dows.map(x=>DOW_KO[x]).join("·")} (${dnums.length}일)`;
+  }
+  if(daysArr.length<=4) return daysArr.map(d=>d.slice(8)+"일").join(", ");
+  return daysArr.slice(0,3).map(d=>d.slice(8)+"일").join(",") + ` 외 ${daysArr.length-3}일`;
 }
 
 /* ─────────── 표 렌더 ─────────── */
@@ -446,6 +513,60 @@ function closeModal(){
   modalIndex = -1;
   render();
 }
+function switchTab(tab){
+  document.querySelectorAll(".modal .tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===tab));
+  document.querySelectorAll(".modal .pane").forEach(p=>p.classList.toggle("on", p.dataset.pane===tab));
+  if(tab==="period") initPeriodPane();
+}
+function initPeriodPane(){
+  const ym = $("ym").value;
+  const r = rows[modalIndex];
+  // 기본값: 현재 행에 선택된 날짜가 있으면 첫날~마지막날, 없으면 그 달 1일~말일
+  const arr = [...r.days].filter(d=>d.startsWith(ym)).sort();
+  const def = arr.length ? [arr[0], arr[arr.length-1]] : [`${ym}-01`, `${ym}-${pad(ymLast(ym).getDate())}`];
+  $("pStart").value = def[0];
+  $("pEnd").value = def[1];
+  // 요일 체크박스: 디폴트 월~금
+  const dows = $("pDows");
+  dows.innerHTML = [1,2,3,4,5,6,0].map(i=>{
+    const checked = (i>=1 && i<=5) ? "checked" : "";
+    return `<label class="dow ${checked?'on':''}" data-dow="${i}">
+      <input type="checkbox" value="${i}" ${checked}>
+      ${DOW_KO[i]}
+    </label>`;
+  }).join("");
+  dows.querySelectorAll("input").forEach(inp=>{
+    inp.addEventListener("change", e=>{
+      e.target.closest(".dow").classList.toggle("on", e.target.checked);
+    });
+  });
+}
+function applyPeriod(){
+  const ym = $("ym").value;
+  const r = rows[modalIndex];
+  const sStr = $("pStart").value;
+  const eStr = $("pEnd").value;
+  if(!sStr || !eStr){ alert("시작일·종료일을 입력하세요."); return; }
+  const dowsSel = new Set([...document.querySelectorAll("#pDows input:checked")].map(c=>+c.value));
+  if(dowsSel.size===0){ alert("최소 1개 요일을 선택하세요."); return; }
+  const mode = document.querySelector("input[name=pMode]:checked").value;
+  // 그 달 범위로 클램프
+  const monS = ymFirst(ym), monE = ymLast(ym);
+  let s = new Date(sStr); if(s<monS) s=monS;
+  let e = new Date(eStr); if(e>monE) e=monE;
+  if(mode==="replace"){
+    [...r.days].forEach(d=>{ if(d.startsWith(ym)) r.days.delete(d); });
+  }
+  let added = 0;
+  for(let d=new Date(s); d<=e; d.setDate(d.getDate()+1)){
+    if(dowsSel.has(d.getDay())){
+      const ds = dateStr(d);
+      if(!r.days.has(ds)){ r.days.add(ds); added++; }
+    }
+  }
+  switchTab("day");
+  renderModalCal();
+}
 function quickFill(kind){
   if(modalIndex<0) return;
   const ym = $("ym").value;
@@ -481,37 +602,148 @@ function clearAll(){
   rows = []; render();
 }
 
-/* ─────────── 엑셀 ─────────── */
+/* ─────────── 엑셀 (수식 + 서식) ─────────── */
 function exportXlsx(){
   const ym = $("ym").value;
   const last = ymLast(ym).getDate();
   const dayCols = Array.from({length:last}, (_,i)=>`${i+1}일`);
-  const data = [
-    ["일용직 급여 계산서"],
-    ["계산 연월", ym, "1일 근무시간", $("hpd").value, "최저시급", $("defRate").value],
-    [],
-    ["#","이름","월급","시급","근무일수","실근로시간","주휴시간","합계시간","세전급여","소득세(3%)","지방세(0.3%)","공제합계","차인지급액", ...dayCols]
-  ];
-  let sG=0,sI=0,sL=0,sD=0,sN=0;
+  const N_BASE = 13; // A~M = 13 columns before day cols
+  // 컬럼: A:#  B:이름  C:월급  D:시급  E:근무일수  F:실근로시간  G:주휴시간  H:합계시간
+  //       I:세전급여  J:소득세  K:지방세  L:공제합계  M:차인지급액  N~:일자
+  const header = ["#","이름","월급","시급","근무일수","실근로시간","주휴시간","합계시간","세전급여","소득세(3%)","지방세(0.3%)","공제합계","차인지급액", ...dayCols];
+  const HEADER_ROW = 4; // 1-based: title(1), meta(2), blank(3), header(4)
+
+  const ws = {};
+  // 셀 헬퍼
+  const colLetter = c => {
+    let s=""; c=c+1;
+    while(c>0){ s = String.fromCharCode(65+(c-1)%26)+s; c=Math.floor((c-1)/26); }
+    return s;
+  };
+  const setCell = (col, row, val, opts={}) => {
+    const addr = colLetter(col)+row;
+    const cell = {v: val};
+    if(opts.t) cell.t = opts.t;
+    else if(typeof val==="number") cell.t = "n";
+    else cell.t = "s";
+    if(opts.f) { cell.f = opts.f; if(opts.cached!==undefined) cell.v = opts.cached; }
+    if(opts.z) cell.z = opts.z;
+    if(opts.s) cell.s = opts.s;
+    ws[addr] = cell;
+  };
+
+  // 스타일
+  const sTitle = {font:{bold:true,sz:14,color:{rgb:"1E40AF"}}, alignment:{horizontal:"left"}};
+  const sMeta = {font:{sz:10,color:{rgb:"6B7280"}}, alignment:{horizontal:"left"}};
+  const sHeader = {
+    font:{bold:true,sz:11,color:{rgb:"FFFFFF"}},
+    fill:{patternType:"solid",fgColor:{rgb:"2563EB"}},
+    alignment:{horizontal:"center",vertical:"center",wrapText:true},
+    border:{top:{style:"thin",color:{rgb:"1E40AF"}},bottom:{style:"thin",color:{rgb:"1E40AF"}},left:{style:"thin",color:{rgb:"1E40AF"}},right:{style:"thin",color:{rgb:"1E40AF"}}}
+  };
+  const sCell = {
+    alignment:{horizontal:"center",vertical:"center"},
+    border:{top:{style:"thin",color:{rgb:"E5E7EB"}},bottom:{style:"thin",color:{rgb:"E5E7EB"}},left:{style:"thin",color:{rgb:"E5E7EB"}},right:{style:"thin",color:{rgb:"E5E7EB"}}}
+  };
+  const sNum = {...sCell, alignment:{horizontal:"right",vertical:"center"}, numFmt:"#,##0"};
+  const sName = {...sCell, alignment:{horizontal:"left",vertical:"center"}};
+  const sNet = {...sNum, font:{bold:true,color:{rgb:"2563EB"}}, fill:{patternType:"solid",fgColor:{rgb:"EFF6FF"}}};
+  const sTotal = {...sNum, font:{bold:true,sz:11}, fill:{patternType:"solid",fgColor:{rgb:"F1F5F9"}}};
+  const sTotalLabel = {...sCell, font:{bold:true,sz:11}, fill:{patternType:"solid",fgColor:{rgb:"F1F5F9"}}, alignment:{horizontal:"right",vertical:"center"}};
+  const sDayMark = {...sCell, font:{bold:true,color:{rgb:"2563EB"}}, fill:{patternType:"solid",fgColor:{rgb:"DBEAFE"}}};
+
+  // 1행: 제목
+  setCell(0,1, "일용직 급여 계산서", {s:sTitle});
+  // 2행: 메타
+  setCell(0,2, `계산 연월: ${ym}   ·   1일 근무시간: ${$("hpd").value}h   ·   최저시급: ${Number($("defRate").value).toLocaleString("ko-KR")}원`, {s:sMeta});
+
+  // 4행: 헤더
+  header.forEach((h,c)=> setCell(c, HEADER_ROW, h, {s:sHeader}));
+
+  // 데이터 행
   rows.forEach((r,i)=>{
     const c = calcRow(r);
-    sG+=c.gross; sI+=c.incomeTax; sL+=c.localTax; sD+=c.deduct; sN+=c.net;
-    const dayMarks = Array.from({length:last}, (_,d)=>{
+    const xr = HEADER_ROW + 1 + i; // 엑셀 행 번호
+    // A: #
+    setCell(0, xr, i+1, {s:sCell});
+    // B: 이름
+    setCell(1, xr, r.name||"", {s:sName});
+    // C: 월급 (값만)
+    setCell(2, xr, Number(r.monthly)||0, {s:sNum, z:"#,##0"});
+    // D: 시급 (월급 있으면 수식 ROUND(C/209), 아니면 직접 값)
+    if(Number(r.monthly)>0){
+      setCell(3, xr, c.rate, {s:sNum, z:"#,##0", f:`ROUND(C${xr}/209,0)`, cached:c.rate});
+    } else {
+      setCell(3, xr, c.rate, {s:sNum, z:"#,##0"});
+    }
+    // E: 근무일수 (값)
+    setCell(4, xr, c.workDays, {s:sCell});
+    // F: 실근로시간 = 근무일수 × 1일시간(메타값을 직접 곱)
+    const hpd = parseFloat($("hpd").value)||8;
+    setCell(5, xr, c.workHours, {s:sCell, f:`E${xr}*${hpd}`, cached:c.workHours});
+    // G: 주휴시간 (값, 사용자 수정 가능)
+    setCell(6, xr, c.weekHolidayHours, {s:sCell});
+    // H: 합계시간 = F + G  (수식)
+    setCell(7, xr, c.totalHours, {s:sCell, f:`F${xr}+G${xr}`, cached:c.totalHours});
+    // I: 세전급여 = D × H
+    setCell(8, xr, c.gross, {s:sNum, z:"#,##0", f:`ROUND(D${xr}*H${xr},0)`, cached:c.gross});
+    // J: 소득세 = FLOOR(I*0.03, 10)
+    setCell(9, xr, c.incomeTax, {s:sNum, z:"#,##0", f:`FLOOR(I${xr}*0.03,10)`, cached:c.incomeTax});
+    // K: 지방세 = FLOOR(I*0.003, 10)
+    setCell(10, xr, c.localTax, {s:sNum, z:"#,##0", f:`FLOOR(I${xr}*0.003,10)`, cached:c.localTax});
+    // L: 공제합계 = J + K
+    setCell(11, xr, c.deduct, {s:sNum, z:"#,##0", f:`J${xr}+K${xr}`, cached:c.deduct});
+    // M: 차인지급액 = I - L
+    setCell(12, xr, c.net, {s:sNet, z:"#,##0", f:`I${xr}-L${xr}`, cached:c.net});
+    // 일자 마크
+    for(let d=0; d<last; d++){
       const ds = `${ym}-${pad(d+1)}`;
-      return r.days.has(ds) ? "O" : "";
-    });
-    data.push([
-      i+1, r.name||"", Number(r.monthly)||0, c.rate,
-      c.workDays, c.workHours, c.weekHolidayHours, c.totalHours,
-      c.gross, c.incomeTax, c.localTax, c.deduct, c.net,
-      ...dayMarks
-    ]);
+      const mark = r.days.has(ds) ? "O" : "";
+      setCell(N_BASE+d, xr, mark, {s: r.days.has(ds) ? sDayMark : sCell});
+    }
   });
-  data.push(["","","","","","","","합계", sG, sI, sL, sD, sN]);
 
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const baseCols = [{wch:4},{wch:10},{wch:11},{wch:11},{wch:9},{wch:11},{wch:9},{wch:10},{wch:13},{wch:12},{wch:12},{wch:12},{wch:14}];
-  ws["!cols"] = [...baseCols, ...dayCols.map(()=>({wch:4}))];
+  // 합계 행
+  const totalRow = HEADER_ROW + 1 + rows.length;
+  if(rows.length>0){
+    setCell(0, totalRow, "", {s:sTotalLabel});
+    setCell(1, totalRow, "합계", {s:sTotalLabel});
+    // C~H 빈칸(스타일만)
+    for(let c=2; c<=7; c++) setCell(c, totalRow, "", {s:sTotalLabel});
+    const r1 = HEADER_ROW+1, rN = HEADER_ROW+rows.length;
+    [8,9,10,11].forEach(col=>{
+      const L = colLetter(col);
+      setCell(col, totalRow, rows.reduce((a,r)=>a+calcRow(r)[["", "", "", "", "", "", "", "", "gross","incomeTax","localTax","deduct"][col]],0), {
+        s:sTotal, z:"#,##0", f:`SUM(${L}${r1}:${L}${rN})`, cached:undefined
+      });
+    });
+    const Lm = colLetter(12);
+    setCell(12, totalRow, rows.reduce((a,r)=>a+calcRow(r).net,0), {
+      s:{...sNet, font:{bold:true,sz:12,color:{rgb:"2563EB"}}}, z:"#,##0",
+      f:`SUM(${Lm}${r1}:${Lm}${rN})`, cached:undefined
+    });
+  }
+
+  // !ref 와 !cols
+  const lastCol = N_BASE + last - 1;
+  const lastRow = totalRow;
+  ws["!ref"] = `A1:${colLetter(lastCol)}${lastRow}`;
+  // 메타 행 가로 머지
+  ws["!merges"] = [
+    {s:{r:0,c:0}, e:{r:0,c:Math.min(lastCol,12)}},
+    {s:{r:1,c:0}, e:{r:1,c:Math.min(lastCol,12)}}
+  ];
+  // 컬럼 너비
+  const baseCols = [
+    {wch:5},{wch:12},{wch:12},{wch:11},{wch:9},{wch:12},{wch:10},{wch:11},
+    {wch:14},{wch:13},{wch:13},{wch:13},{wch:15}
+  ];
+  ws["!cols"] = [...baseCols, ...dayCols.map(()=>({wch:5}))];
+  // 행 높이
+  ws["!rows"] = [];
+  ws["!rows"][0] = {hpt:24};
+  ws["!rows"][HEADER_ROW-1] = {hpt:32};
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "급여계산");
   XLSX.writeFile(wb, `일용직급여_${ym}.xlsx`);
@@ -627,6 +859,10 @@ function init(){
   document.querySelectorAll(".modal .quick button").forEach(b=>{
     b.addEventListener("click", ()=>quickFill(b.dataset.q));
   });
+  document.querySelectorAll(".modal .tabs button").forEach(b=>{
+    b.addEventListener("click", ()=>switchTab(b.dataset.tab));
+  });
+  $("pApply").addEventListener("click", applyPeriod);
 
   render();
 }
