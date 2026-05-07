@@ -158,7 +158,7 @@
 
 <header>
   <h1>일용직 급여계산기</h1>
-  <span class="ver" id="verBtn" title="업데이트 내역">v3.1.3</span>
+  <span class="ver" id="verBtn" title="업데이트 내역">v3.1.4</span>
   <div class="spacer"></div>
   <button id="installBtn" class="install" title="바탕화면 바로가기 만들기">📌 바탕화면에 설치</button>
   <button id="addBtn" class="pri">+ 인원 추가</button>
@@ -198,6 +198,7 @@
         <th style="width:110px">월급(원)<br><span style="font-weight:400;color:#94a3b8;font-size:10px">시급 자동</span></th>
         <th style="width:110px">시급(원)<br><span style="font-weight:400;color:#94a3b8;font-size:10px">월÷209</span></th>
         <th style="width:160px">근무일<br><span style="font-weight:400;color:#94a3b8;font-size:10px">달력에서 선택</span></th>
+        <th style="width:70px">1일 시간<br><span style="font-weight:400;color:#94a3b8;font-size:10px">개인별</span></th>
         <th>근무일수</th>
         <th>실근로시간</th>
         <th style="width:80px">주휴시간<br><span style="font-weight:400;color:#94a3b8;font-size:10px">수정 가능</span></th>
@@ -213,7 +214,7 @@
     <tbody id="tbody"></tbody>
     <tfoot>
       <tr>
-        <td colspan="9" style="text-align:right;padding-right:10px">합계</td>
+        <td colspan="10" style="text-align:right;padding-right:10px">합계</td>
         <td class="num" id="sumGross">0</td>
         <td class="num" id="sumIncome">0</td>
         <td class="num" id="sumLocal">0</td>
@@ -296,8 +297,9 @@
 <footer class="credit">CDN &amp; Cloud is by Solbox..</footer>
 
 <script>
-const VER = "v3.1.3";
+const VER = "v3.1.4";
 const UPDATE_HISTORY = [
+  ["v3.1.4","2026-05-07","개인별 1일 근무시간 칸 추가 (비우면 메타 기본값, 입력하면 그 값으로 계산)"],
   ["v3.1.3","2026-05-07","주휴/시급 자동값 칸 클릭 시 전체선택 → 바로 새 값 입력 가능 (덧붙여 입력 문제 해결)"],
   ["v3.1.2","2026-05-07","바탕화면 아이콘 = '급여' + ₩ 디자인 PNG, 앱 이름 = '급여 계산기'"],
   ["v3.1.1","2026-05-07","월급 입력해도 시급 자동 변경 안 되던 문제 수정. 인원 추가 시 시급은 빈값(자동), 시급 우선순위: 직접입력 > 월급÷209 > 기본 최저시급"],
@@ -327,7 +329,11 @@ const dateStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate(
 /* ─────────── 계산 ─────────── */
 function calcRow(r){
   const ym = $("ym").value;
-  const hpd = parseFloat($("hpd").value)||8;
+  const globalHpd = parseFloat($("hpd").value)||8;
+  // 개인별 1일 시간 우선, 없으면 글로벌
+  const personalHpd = (r.hpd!=="" && r.hpd!=null) ? Number(r.hpd) : NaN;
+  const hpd = (!isNaN(personalHpd) && personalHpd>0) ? personalHpd : globalHpd;
+  const isHpdAuto = !(personalHpd>0);
   const days = [...(r.days||new Set())].filter(d => d.startsWith(ym)).sort();
   const workDays = days.length;
   const workHours = workDays * hpd;
@@ -365,7 +371,7 @@ function calcRow(r){
   const deduct = incomeTax + localTax;
   const net = gross - deduct;
 
-  return {workDays, workHours, weekHolidayHours, autoWeekHoliday, isWhhAuto, totalHours, rate, gross, incomeTax, localTax, deduct, net, days};
+  return {workDays, workHours, weekHolidayHours, autoWeekHoliday, isWhhAuto, totalHours, rate, hpd, isHpdAuto, gross, incomeTax, localTax, deduct, net, days};
 }
 
 /* ─────────── 근무일 미리보기 ─────────── */
@@ -428,6 +434,10 @@ function render(){
         <button data-cal="${i}" class="${dayCount===0?'empty':''}">${dayCount===0?'📅 선택':`📅 ${dayCount}일 선택됨`}</button>
         ${preview?`<span class="preview" title="${c.days.join(', ')}">${preview}</span>`:''}
       </td>
+      <td class="whh">
+        <input data-k="hpd" data-i="${i}" value="${c.isHpdAuto ? c.hpd : r.hpd}" inputmode="decimal" ${c.isHpdAuto?'class="auto"':''}>
+        ${c.isHpdAuto?'<span class="auto-tag">기본</span>':'<span class="auto-tag" style="color:#dc2626">개인</span>'}
+      </td>
       <td class="num">${c.workDays}</td>
       <td class="num">${c.workHours}</td>
       <td class="whh">
@@ -455,9 +465,9 @@ function render(){
     inp.addEventListener("input", e=>{
       const i = +e.target.dataset.i, k = e.target.dataset.k;
       let v = e.target.value;
-      if(k==="rate" || k==="monthly" || k==="whh") v = v.replace(/[^\d.]/g,"");
+      if(k==="rate" || k==="monthly" || k==="whh" || k==="hpd") v = v.replace(/[^\d.]/g,"");
       rows[i][k] = v;
-      if(k==="rate" || k==="monthly" || k==="whh") render();
+      if(k==="rate" || k==="monthly" || k==="whh" || k==="hpd") render();
     });
     // 자동값(회색 배경)인 input 클릭/포커스 시 전체선택 → 사용자가 바로 새 값 입력 가능
     if(inp.classList.contains("auto")){
@@ -604,7 +614,7 @@ function quickFill(kind){
 /* ─────────── 행동 ─────────── */
 function addRow(){
   // 시급은 빈 값으로 둬서 자동(월급환산 또는 기본 최저시급)이 적용되도록
-  rows.push({name:"", monthly:"", rate:"", days:new Set(), whh:""});
+  rows.push({name:"", monthly:"", rate:"", days:new Set(), whh:"", hpd:""});
   render();
   setTimeout(()=>{
     const inp = document.querySelector('#tbody tr:last-child input[data-k="name"]');
@@ -622,10 +632,10 @@ function exportXlsx(){
   const ym = $("ym").value;
   const last = ymLast(ym).getDate();
   const dayCols = Array.from({length:last}, (_,i)=>`${i+1}일`);
-  const N_BASE = 13; // A~M = 13 columns before day cols
-  // 컬럼: A:#  B:이름  C:월급  D:시급  E:근무일수  F:실근로시간  G:주휴시간  H:합계시간
-  //       I:세전급여  J:소득세  K:지방세  L:공제합계  M:차인지급액  N~:일자
-  const header = ["#","이름","월급","시급","근무일수","실근로시간","주휴시간","합계시간","세전급여","소득세(3%)","지방세(0.3%)","공제합계","차인지급액", ...dayCols];
+  const N_BASE = 14; // A~N = 14 columns before day cols
+  // 컬럼: A:#  B:이름  C:월급  D:시급  E:1일시간  F:근무일수  G:실근로시간  H:주휴시간
+  //       I:합계시간  J:세전급여  K:소득세  L:지방세  M:공제합계  N:차인지급액  O~:일자
+  const header = ["#","이름","월급","시급","1일시간","근무일수","실근로시간","주휴시간","합계시간","세전급여","소득세(3%)","지방세(0.3%)","공제합계","차인지급액", ...dayCols];
   const HEADER_ROW = 4; // 1-based: title(1), meta(2), blank(3), header(4)
 
   const ws = {};
@@ -691,25 +701,26 @@ function exportXlsx(){
     } else {
       setCell(3, xr, c.rate, {s:sNum, z:"#,##0"});
     }
-    // E: 근무일수 (값)
-    setCell(4, xr, c.workDays, {s:sCell});
-    // F: 실근로시간 = 근무일수 × 1일시간(메타값을 직접 곱)
-    const hpd = parseFloat($("hpd").value)||8;
-    setCell(5, xr, c.workHours, {s:sCell, f:`E${xr}*${hpd}`, cached:c.workHours});
-    // G: 주휴시간 (값, 사용자 수정 가능)
-    setCell(6, xr, c.weekHolidayHours, {s:sCell});
-    // H: 합계시간 = F + G  (수식)
-    setCell(7, xr, c.totalHours, {s:sCell, f:`F${xr}+G${xr}`, cached:c.totalHours});
-    // I: 세전급여 = D × H
-    setCell(8, xr, c.gross, {s:sNum, z:"#,##0", f:`ROUND(D${xr}*H${xr},0)`, cached:c.gross});
-    // J: 소득세 = FLOOR(I*0.03, 10)
-    setCell(9, xr, c.incomeTax, {s:sNum, z:"#,##0", f:`FLOOR(I${xr}*0.03,10)`, cached:c.incomeTax});
-    // K: 지방세 = FLOOR(I*0.003, 10)
-    setCell(10, xr, c.localTax, {s:sNum, z:"#,##0", f:`FLOOR(I${xr}*0.003,10)`, cached:c.localTax});
-    // L: 공제합계 = J + K
-    setCell(11, xr, c.deduct, {s:sNum, z:"#,##0", f:`J${xr}+K${xr}`, cached:c.deduct});
-    // M: 차인지급액 = I - L
-    setCell(12, xr, c.net, {s:sNet, z:"#,##0", f:`I${xr}-L${xr}`, cached:c.net});
+    // E: 1일 시간 (개인별)
+    setCell(4, xr, c.hpd, {s:sCell});
+    // F: 근무일수 (값)
+    setCell(5, xr, c.workDays, {s:sCell});
+    // G: 실근로시간 = 근무일수 × 1일시간
+    setCell(6, xr, c.workHours, {s:sCell, f:`F${xr}*E${xr}`, cached:c.workHours});
+    // H: 주휴시간 (값, 사용자 수정 가능)
+    setCell(7, xr, c.weekHolidayHours, {s:sCell});
+    // I: 합계시간 = G + H
+    setCell(8, xr, c.totalHours, {s:sCell, f:`G${xr}+H${xr}`, cached:c.totalHours});
+    // J: 세전급여 = D × I
+    setCell(9, xr, c.gross, {s:sNum, z:"#,##0", f:`ROUND(D${xr}*I${xr},0)`, cached:c.gross});
+    // K: 소득세 = FLOOR(J*0.03, 10)
+    setCell(10, xr, c.incomeTax, {s:sNum, z:"#,##0", f:`FLOOR(J${xr}*0.03,10)`, cached:c.incomeTax});
+    // L: 지방세 = FLOOR(J*0.003, 10)
+    setCell(11, xr, c.localTax, {s:sNum, z:"#,##0", f:`FLOOR(J${xr}*0.003,10)`, cached:c.localTax});
+    // M: 공제합계 = K + L
+    setCell(12, xr, c.deduct, {s:sNum, z:"#,##0", f:`K${xr}+L${xr}`, cached:c.deduct});
+    // N: 차인지급액 = J - M
+    setCell(13, xr, c.net, {s:sNet, z:"#,##0", f:`J${xr}-M${xr}`, cached:c.net});
     // 일자 마크
     for(let d=0; d<last; d++){
       const ds = `${ym}-${pad(d+1)}`;
@@ -723,17 +734,17 @@ function exportXlsx(){
   if(rows.length>0){
     setCell(0, totalRow, "", {s:sTotalLabel});
     setCell(1, totalRow, "합계", {s:sTotalLabel});
-    // C~H 빈칸(스타일만)
-    for(let c=2; c<=7; c++) setCell(c, totalRow, "", {s:sTotalLabel});
+    for(let c=2; c<=8; c++) setCell(c, totalRow, "", {s:sTotalLabel});
     const r1 = HEADER_ROW+1, rN = HEADER_ROW+rows.length;
-    [8,9,10,11].forEach(col=>{
+    const sumKeyByCol = {9:"gross", 10:"incomeTax", 11:"localTax", 12:"deduct"};
+    [9,10,11,12].forEach(col=>{
       const L = colLetter(col);
-      setCell(col, totalRow, rows.reduce((a,r)=>a+calcRow(r)[["", "", "", "", "", "", "", "", "gross","incomeTax","localTax","deduct"][col]],0), {
+      setCell(col, totalRow, rows.reduce((a,r)=>a+calcRow(r)[sumKeyByCol[col]],0), {
         s:sTotal, z:"#,##0", f:`SUM(${L}${r1}:${L}${rN})`, cached:undefined
       });
     });
-    const Lm = colLetter(12);
-    setCell(12, totalRow, rows.reduce((a,r)=>a+calcRow(r).net,0), {
+    const Lm = colLetter(13);
+    setCell(13, totalRow, rows.reduce((a,r)=>a+calcRow(r).net,0), {
       s:{...sNet, font:{bold:true,sz:12,color:{rgb:"2563EB"}}}, z:"#,##0",
       f:`SUM(${Lm}${r1}:${Lm}${rN})`, cached:undefined
     });
@@ -745,12 +756,12 @@ function exportXlsx(){
   ws["!ref"] = `A1:${colLetter(lastCol)}${lastRow}`;
   // 메타 행 가로 머지
   ws["!merges"] = [
-    {s:{r:0,c:0}, e:{r:0,c:Math.min(lastCol,12)}},
-    {s:{r:1,c:0}, e:{r:1,c:Math.min(lastCol,12)}}
+    {s:{r:0,c:0}, e:{r:0,c:Math.min(lastCol,13)}},
+    {s:{r:1,c:0}, e:{r:1,c:Math.min(lastCol,13)}}
   ];
   // 컬럼 너비
   const baseCols = [
-    {wch:5},{wch:12},{wch:12},{wch:11},{wch:9},{wch:12},{wch:10},{wch:11},
+    {wch:5},{wch:12},{wch:12},{wch:11},{wch:8},{wch:9},{wch:12},{wch:10},{wch:11},
     {wch:14},{wch:13},{wch:13},{wch:13},{wch:15}
   ];
   ws["!cols"] = [...baseCols, ...dayCols.map(()=>({wch:5}))];
@@ -781,7 +792,7 @@ function importXlsx(file){
       if(hdrIdx<0) throw new Error("헤더(#, 이름) 못 찾음");
       const hdr = arr[hdrIdx];
       const idx = name => hdr.findIndex(h => String(h).replace(/\s/g,"")===name);
-      const iName=idx("이름"), iMonthly=idx("월급"), iRate=idx("시급"), iWhh=idx("주휴시간");
+      const iName=idx("이름"), iMonthly=idx("월급"), iRate=idx("시급"), iWhh=idx("주휴시간"), iHpd=idx("1일시간");
       const iDay1 = hdr.findIndex(h => /^1일$/.test(String(h).trim()));
       // 구버전 호환: 입사일/종료일이 있고 일자 컬럼이 없으면 그 기간의 평일을 채움
       const iStart = idx("입사일"), iEnd = idx("종료일");
@@ -823,12 +834,15 @@ function importXlsx(file){
           }
         }
 
+        const globalHpd = parseFloat($("hpd").value)||8;
+        const xlsHpd = (iHpd>=0 && row[iHpd]!=="" && row[iHpd]!=null) ? Number(row[iHpd]) : NaN;
         const r = {
           name: String(row[iName]||""),
           monthly: iMonthly>=0 ? String(Number(row[iMonthly])||"") : "",
           rate: String(Number(row[iRate])||""),
           days,
-          whh: ""
+          whh: "",
+          hpd: (!isNaN(xlsHpd) && xlsHpd>0 && xlsHpd!==globalHpd) ? String(xlsHpd) : ""
         };
         if(iWhh>=0 && row[iWhh]!=="" && row[iWhh]!=null){
           const xlsWhh = Number(row[iWhh]);
