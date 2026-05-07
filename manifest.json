@@ -1,6 +1,6 @@
 {
-  "name": "Solbox 일용직 급여계산기",
-  "short_name": "급여계산기",
+  "name": "급여 계산기",
+  "short_name": "급여 계산기",
   "description": "일용직/사업소득자 급여 계산기. 주휴수당·세금(3.3%) 자동, 엑셀 입출력, A4 인쇄.",
   "start_url": "./",
   "display": "standalone",
@@ -10,9 +10,10 @@
   "lang": "ko-KR",
   "scope": "./",
   "icons": [
-    { "src": "./icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "./icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "./icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "maskable" },
-    { "src": "./icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
