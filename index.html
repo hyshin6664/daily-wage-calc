@@ -92,7 +92,7 @@
 
 <header>
   <h1>일용직 급여계산기</h1>
-  <span class="ver" id="verBtn" title="업데이트 내역">v1.2.0</span>
+  <span class="ver" id="verBtn" title="업데이트 내역">v1.2.1</span>
   <div class="spacer"></div>
   <button id="installBtn" class="install" title="바탕화면 바로가기 만들기">📌 바탕화면에 설치</button>
   <button id="addBtn" class="pri">+ 인원 추가</button>
@@ -180,8 +180,9 @@
 
 <script>
 /* ─────────────────────── 상태 ─────────────────────── */
-const VER = "v1.2.0";
+const VER = "v1.2.1";
 const UPDATE_HISTORY = [
+  ["v1.2.1","2026-05-07","시급 항상 편집 가능(자동 채워주되 잠그지 않음), SW 캐시 v2 강제 갱신"],
   ["v1.2.0","2026-05-07","월급 입력 시 시급 자동 환산(÷209), 엑셀에 월급 컬럼 추가"],
   ["v1.1.0","2026-05-07","PWA 설치 지원(바탕화면 바로가기), 오프라인 캐시"],
   ["v1.0.0","2026-05-07","최초 배포 — 주휴수당/세금(3.3%) 자동 계산, 엑셀 입출력, A4 인쇄"]
@@ -254,9 +255,10 @@ function calcRow(r){
 
   const workHours = workDays * hpd;
   const totalHours = workHours + weekHolidayHours;
-  // 월급이 있으면 시급 = round(월급/209), 없으면 직접 입력 시급
+  // 시급 우선: r.rate 가 비어있고 월급만 있으면 자동 환산
   const monthly = Number(r.monthly)||0;
-  const rate = monthly>0 ? Math.round(monthly/209) : (Number(r.rate)||0);
+  const explicitRate = Number(r.rate)||0;
+  const rate = explicitRate>0 ? explicitRate : (monthly>0 ? Math.round(monthly/209) : 0);
   const gross = Math.round(totalHours * rate);
   const incomeTax = floor10(gross * 0.03);
   const localTax  = floor10(gross * 0.003);
@@ -277,14 +279,16 @@ function render(){
     sG+=c.gross; sI+=c.incomeTax; sL+=c.localTax; sD+=c.deduct; sN+=c.net;
 
     const tr = document.createElement("tr");
-    const hasMonthly = Number(r.monthly)>0;
+    // 시급 표시: 사용자 입력값 우선, 없으면 월급 환산값(자동)
+    const showRate = (r.rate && Number(r.rate)>0) ? r.rate : (Number(r.monthly)>0 ? c.rate : "");
+    const isAuto = !(r.rate && Number(r.rate)>0) && Number(r.monthly)>0;
     tr.innerHTML = `
       <td>${i+1}</td>
       <td class="name"><input data-k="name" data-i="${i}" value="${r.name||""}" placeholder="이름"></td>
       <td class="rate"><input data-k="monthly" data-i="${i}" value="${r.monthly||""}" placeholder="2200000" inputmode="numeric"></td>
       <td class="rate">
-        <input data-k="rate" data-i="${i}" value="${hasMonthly ? c.rate : (r.rate||"")}" placeholder="10526" inputmode="numeric" ${hasMonthly?'readonly class="auto"':''}>
-        ${hasMonthly?'<span class="auto-tag">자동</span>':''}
+        <input data-k="rate" data-i="${i}" value="${showRate}" placeholder="자동" inputmode="numeric" ${isAuto?'class="auto"':''}>
+        ${isAuto?'<span class="auto-tag">월÷209 자동</span>':''}
       </td>
       <td class="date"><input type="date" data-k="start" data-i="${i}" value="${r.start||""}"></td>
       <td class="date"><input type="date" data-k="end" data-i="${i}" value="${r.end||""}"></td>
