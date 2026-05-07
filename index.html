@@ -92,7 +92,7 @@
 
 <header>
   <h1>일용직 급여계산기</h1>
-  <span class="ver" id="verBtn" title="업데이트 내역">v1.2.1</span>
+  <span class="ver" id="verBtn" title="업데이트 내역">v1.2.2</span>
   <div class="spacer"></div>
   <button id="installBtn" class="install" title="바탕화면 바로가기 만들기">📌 바탕화면에 설치</button>
   <button id="addBtn" class="pri">+ 인원 추가</button>
@@ -180,8 +180,9 @@
 
 <script>
 /* ─────────────────────── 상태 ─────────────────────── */
-const VER = "v1.2.1";
+const VER = "v1.2.2";
 const UPDATE_HISTORY = [
+  ["v1.2.2","2026-05-07","월급/시급 입력 중 포커스 빠지는 문제 수정 (커서 위치 보존)"],
   ["v1.2.1","2026-05-07","시급 항상 편집 가능(자동 채워주되 잠그지 않음), SW 캐시 v2 강제 갱신"],
   ["v1.2.0","2026-05-07","월급 입력 시 시급 자동 환산(÷209), 엑셀에 월급 컬럼 추가"],
   ["v1.1.0","2026-05-07","PWA 설치 지원(바탕화면 바로가기), 오프라인 캐시"],
@@ -271,6 +272,17 @@ function calcRow(r){
 /* ─────────────────────── 렌더 ─────────────────────── */
 function render(){
   const tbody = $("tbody");
+  // 포커스 보존: 현재 포커스된 input 의 행/필드/커서 위치 기억
+  const ae = document.activeElement;
+  let focusInfo = null;
+  if(ae && ae.tagName==="INPUT" && ae.dataset && ae.dataset.k){
+    focusInfo = {
+      i: ae.dataset.i,
+      k: ae.dataset.k,
+      start: ae.selectionStart,
+      end: ae.selectionEnd
+    };
+  }
   tbody.innerHTML = "";
   let sG=0,sI=0,sL=0,sD=0,sN=0;
 
@@ -328,6 +340,16 @@ function render(){
       rows.splice(i,1); render();
     });
   });
+
+  // 포커스 복원
+  if(focusInfo){
+    const sel = `#tbody input[data-i="${focusInfo.i}"][data-k="${focusInfo.k}"]`;
+    const el = document.querySelector(sel);
+    if(el){
+      el.focus();
+      try{ el.setSelectionRange(focusInfo.start, focusInfo.end); }catch(_){}
+    }
+  }
 }
 
 /* ─────────────────────── 행동 ─────────────────────── */
