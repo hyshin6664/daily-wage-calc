@@ -158,7 +158,7 @@
 
 <header>
   <h1>일용직 급여계산기</h1>
-  <span class="ver" id="verBtn" title="업데이트 내역">v3.1.0</span>
+  <span class="ver" id="verBtn" title="업데이트 내역">v3.1.1</span>
   <div class="spacer"></div>
   <button id="installBtn" class="install" title="바탕화면 바로가기 만들기">📌 바탕화면에 설치</button>
   <button id="addBtn" class="pri">+ 인원 추가</button>
@@ -296,8 +296,9 @@
 <footer class="credit">CDN &amp; Cloud is by Solbox..</footer>
 
 <script>
-const VER = "v3.1.0";
+const VER = "v3.1.1";
 const UPDATE_HISTORY = [
+  ["v3.1.1","2026-05-07","월급 입력해도 시급 자동 변경 안 되던 문제 수정. 인원 추가 시 시급은 빈값(자동), 시급 우선순위: 직접입력 > 월급÷209 > 기본 최저시급"],
   ["v3.1.0","2026-05-07","모달에 [기간 선택] 탭 추가(시작~종료+요일), 엑셀 색·테두리·천단위·수식 내장(시급/주휴 바꾸면 세전·세금·차인 자동 재계산)"],
   ["v3.0.0","2026-05-07","입사일/종료일 → 달력 클릭 통합. 표 한 줄로 깔끔하게. 주 15h+ 자동 주휴, 최저시급(10,320) 기본"],
   ["v2.0.0","2026-05-07","📅 달력 모드 추가 (별도 페이지)"],
@@ -353,7 +354,9 @@ function calcRow(r){
 
   const monthly = Number(r.monthly)||0;
   const explicitRate = Number(r.rate)||0;
-  const rate = explicitRate>0 ? explicitRate : (monthly>0 ? Math.round(monthly/209) : 0);
+  const defRate = Number(($("defRate")||{}).value)||0;
+  // 우선순위: 사용자가 시급 직접 입력 > 월급 환산 > 기본 시급(최저시급)
+  const rate = explicitRate>0 ? explicitRate : (monthly>0 ? Math.round(monthly/209) : defRate);
   const gross = Math.round(totalHours * rate);
   const incomeTax = floor10(gross * 0.03);
   const localTax  = floor10(gross * 0.003);
@@ -401,8 +404,12 @@ function render(){
     const c = calcRow(r);
     sG+=c.gross; sI+=c.incomeTax; sL+=c.localTax; sD+=c.deduct; sN+=c.net;
 
-    const showRate = (r.rate && Number(r.rate)>0) ? r.rate : (Number(r.monthly)>0 ? c.rate : "");
-    const isAuto = !(r.rate && Number(r.rate)>0) && Number(r.monthly)>0;
+    const userRate = (r.rate && Number(r.rate)>0);
+    const showRate = userRate ? r.rate : c.rate;
+    const isAuto = !userRate;
+    const autoLabel = !userRate
+      ? (Number(r.monthly)>0 ? "월÷209 자동" : "기본 시급")
+      : "";
     const dayCount = c.days.length;
     const preview = daysPreview(c.days);
 
@@ -413,7 +420,7 @@ function render(){
       <td class="rate"><input data-k="monthly" data-i="${i}" value="${r.monthly||""}" placeholder="2200000" inputmode="numeric"></td>
       <td class="rate">
         <input data-k="rate" data-i="${i}" value="${showRate}" placeholder="자동" inputmode="numeric" ${isAuto?'class="auto"':''}>
-        ${isAuto?'<span class="auto-tag">월÷209 자동</span>':''}
+        ${isAuto?`<span class="auto-tag">${autoLabel}</span>`:''}
       </td>
       <td class="days">
         <button data-cal="${i}" class="${dayCount===0?'empty':''}">${dayCount===0?'📅 선택':`📅 ${dayCount}일 선택됨`}</button>
@@ -588,8 +595,8 @@ function quickFill(kind){
 
 /* ─────────── 행동 ─────────── */
 function addRow(){
-  const defRate = $("defRate").value || "";
-  rows.push({name:"", monthly:"", rate: defRate, days:new Set(), whh:""});
+  // 시급은 빈 값으로 둬서 자동(월급환산 또는 기본 최저시급)이 적용되도록
+  rows.push({name:"", monthly:"", rate:"", days:new Set(), whh:""});
   render();
   setTimeout(()=>{
     const inp = document.querySelector('#tbody tr:last-child input[data-k="name"]');
@@ -837,7 +844,7 @@ function init(){
   $("ym").value = todayYM();
   $("ym").addEventListener("change", render);
   $("hpd").addEventListener("input", render);
-  $("defRate").addEventListener("input", ()=>{}); // 기본값 변경 시 새 행에만 적용
+  $("defRate").addEventListener("input", render); // 기본값 변경하면 자동 시급 행 즉시 반영
 
   $("addBtn").addEventListener("click", addRow);
   $("addBtn2").addEventListener("click", addRow);
