@@ -28,6 +28,9 @@
   header button.pri:hover{background:#1d4ed8}
   header button.install{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
   header button.install:hover{background:#d1fae5}
+  header a.mode{font-family:inherit;font-size:13px;border:1px solid var(--line);background:#fff;padding:7px 12px;border-radius:8px;cursor:pointer;text-decoration:none;color:var(--ink)}
+  header a.mode:hover{background:#f1f5f9}
+  header a.mode.alt{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
   header button#installBtn{display:none}
   header input[type=file]{display:none}
 
@@ -97,7 +100,8 @@
 
 <header>
   <h1>일용직 급여계산기</h1>
-  <span class="ver" id="verBtn" title="업데이트 내역">v1.3.0</span>
+  <span class="ver" id="verBtn" title="업데이트 내역">v2.0.0</span>
+  <a href="./calendar.html" class="mode alt" title="달력 모드">📅 달력 모드</a>
   <div class="spacer"></div>
   <button id="installBtn" class="install" title="바탕화면 바로가기 만들기">📌 바탕화면에 설치</button>
   <button id="addBtn" class="pri">+ 인원 추가</button>
@@ -186,8 +190,9 @@
 
 <script>
 /* ─────────────────────── 상태 ─────────────────────── */
-const VER = "v1.3.0";
+const VER = "v2.0.0";
 const UPDATE_HISTORY = [
+  ["v2.0.0","2026-05-07","📅 달력 모드 추가 — 날짜 클릭으로 근무일 체크, 최저시급(10,320원) 기본, 주 15h+ 주휴수당 옵션"],
   ["v1.3.0","2026-05-07","주휴시간 수동 수정 가능 (연속근무 등 자동값과 다를 때 직접 입력)"],
   ["v1.2.2","2026-05-07","월급/시급 입력 중 포커스 빠지는 문제 수정 (커서 위치 보존)"],
   ["v1.2.1","2026-05-07","시급 항상 편집 가능(자동 채워주되 잠그지 않음), SW 캐시 v2 강제 갱신"],
